@@ -74,30 +74,17 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
     );
   }
 
-  // 2. Fase de Revelação do Papel
+  // 2. Fase de Revelação do Papel (Design 100% idêntico para não chamar atenção)
   return (
     <div className="flex-1 flex flex-col justify-between animate-in zoom-in-95 duration-300">
       <div className="flex-1 flex flex-col justify-center my-auto">
-        <div
-          className={`rounded-3xl p-6 sm:p-8 text-center transition-all ${
-            isImpostor
-              ? 'bg-gradient-to-b from-rose-950/60 to-slate-900/90 border-2 border-rose-500/50 shadow-2xl shadow-rose-950/50'
-              : 'bg-gradient-to-b from-slate-900/90 to-slate-950/90 border-2 border-cyan-400/40 shadow-2xl shadow-cyan-950/40'
-          }`}
-        >
-          {/* Badge do Papel */}
+        <div className="rounded-3xl p-6 sm:p-8 text-center bg-gradient-to-b from-slate-900/90 to-slate-950/90 border-2 border-cyan-400/40 shadow-2xl shadow-cyan-950/40 transition-all">
+          {/* Badge Neutro Idêntico */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider mb-5 shadow-md">
-            {isImpostor ? (
-              <span className="flex items-center gap-1.5 text-rose-400 bg-rose-500/20 border border-rose-500/40 px-3 py-1 rounded-full">
-                <Flame className="w-4 h-4 text-rose-400" />
-                Infiltrado da Rodada
-              </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 rounded-full">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                Agente Conhecedor
-              </span>
-            )}
+            <span className="flex items-center gap-1.5 text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 px-3.5 py-1 rounded-full">
+              <Sparkles className="w-4 h-4 text-cyan-400" />
+              Informação da Rodada
+            </span>
           </div>
 
           {/* Tema */}
@@ -110,63 +97,60 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
             </span>
           </div>
 
-          {/* Caixa da Palavra Secreta ou Mensagem do Infiltrado */}
+          {/* Caixa da Palavra Secreta / Infiltrado (Estrutura idêntica) */}
           <div className="my-5 p-5 sm:p-6 rounded-2xl bg-black/40 border border-white/10 relative overflow-hidden">
-            {isImpostor ? (
-              <div className="space-y-3">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400">
-                  <ShieldAlert className="w-8 h-8" />
-                </div>
-                <div className="font-extrabold text-lg text-rose-300 leading-snug">
-                  Você é o infiltrado dessa rodada, tente não ser pego!
-                </div>
-                <div className="text-xs text-rose-200/80 font-medium">
-                  O tema é: <span className="font-bold text-white">{roomState.themeName}</span>
-                </div>
-                <p className="text-[11px] text-slate-400 italic pt-1">
-                  Dica: finja que sabe a palavra secreta ao dar suas pistas!
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Sua Palavra Secreta
-                </span>
-                <div className="py-2">
-                  {showSecret ? (
+            <div className="space-y-2">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                Sua Palavra Secreta
+              </span>
+              <div className="py-2 min-h-[56px] flex items-center justify-center">
+                {showSecret ? (
+                  isImpostor ? (
+                    <div className="flex flex-col items-center gap-1">
+                      <span
+                        id="secret-word-display"
+                        className="text-2xl sm:text-3xl font-black tracking-tight text-white select-none drop-shadow-md"
+                      >
+                        Você é o Infiltrado
+                      </span>
+                      <span className="text-xs text-slate-400 font-medium">
+                        Tente não ser pego!
+                      </span>
+                    </div>
+                  ) : (
                     <span
                       id="secret-word-display"
                       className="text-3xl sm:text-4xl font-black tracking-tight text-white select-none drop-shadow-md"
                     >
                       {roomState.secretWord}
                     </span>
-                  ) : (
-                    <span className="text-2xl sm:text-3xl font-mono text-slate-600 select-none">
-                      ••••••••••••
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  id="btn-toggle-secret"
-                  onClick={() => setShowSecret(!showSecret)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 cursor-pointer transition-all"
-                >
-                  {showSecret ? (
-                    <>
-                      <EyeOff className="w-3.5 h-3.5" />
-                      <span>Ocultar para não espiarem</span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Mostrar Palavra</span>
-                    </>
-                  )}
-                </button>
+                  )
+                ) : (
+                  <span className="text-2xl sm:text-3xl font-mono text-slate-600 select-none">
+                    ••••••••••••
+                  </span>
+                )}
               </div>
-            )}
+
+              <button
+                type="button"
+                id="btn-toggle-secret"
+                onClick={() => setShowSecret(!showSecret)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 cursor-pointer transition-all active:scale-95"
+              >
+                {showSecret ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5" />
+                    <span>Ocultar para não espiarem</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Mostrar Palavra</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Se a rodada foi finalizada e revelada */}
