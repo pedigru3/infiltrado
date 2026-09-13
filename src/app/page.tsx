@@ -7,10 +7,11 @@ import { ScreenEnterCode } from '@/components/ScreenEnterCode';
 import { ScreenName } from '@/components/ScreenName';
 import { ScreenLobby } from '@/components/ScreenLobby';
 import { ScreenGame } from '@/components/ScreenGame';
+import { ScreenTwinGame } from '@/components/ScreenTwinGame';
 import { ThemeModal } from '@/components/ThemeModal';
-import { ClientRoomState } from '@/lib/roomStore';
+import { ClientRoomState, GameMode } from '@/lib/roomStore';
 
-type AppScreen = 'home' | 'enter_code' | 'name' | 'lobby' | 'game';
+type AppScreen = 'home' | 'enter_code' | 'name' | 'lobby' | 'game' | 'twin_game';
 
 function subscribeToStorage(callback: () => void) {
   if (typeof window === 'undefined') return () => {};
@@ -60,7 +61,7 @@ export default function HomePage() {
 
   // Heartbeat function to maintain presence online and receive game state
   const sendHeartbeat = useCallback(async () => {
-    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game')) {
+    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game' && screen !== 'twin_game')) {
       return;
     }
 
@@ -76,13 +77,21 @@ export default function HomePage() {
         const state: ClientRoomState = data.state;
         setRoomState(state);
 
-        // Transition between lobby and game if state changed
+        // Transition between screens based on room status
         if (state.status === 'drawing' || state.status === 'playing' || state.status === 'ended') {
           if (screen !== 'game') {
             setScreen('game');
           }
+        } else if (
+          state.status === 'twin_playing' ||
+          state.status === 'twin_revealed' ||
+          state.status === 'twin_matched'
+        ) {
+          if (screen !== 'twin_game') {
+            setScreen('twin_game');
+          }
         } else if (state.status === 'lobby') {
-          if (screen === 'game') {
+          if (screen === 'game' || screen === 'twin_game') {
             setScreen('lobby');
           }
         }
@@ -93,13 +102,13 @@ export default function HomePage() {
         setScreen('home');
       }
     } catch {
-      // Network hiccup transitório, não desconecta
+      // Network hiccup transitório
     }
   }, [roomCode, activePlayerId, activePlayerName, screen]);
 
   // Heartbeat interval every 2.5 seconds
   useEffect(() => {
-    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game')) {
+    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game' && screen !== 'twin_game')) {
       return;
     }
 
@@ -133,12 +142,16 @@ export default function HomePage() {
 
   // --- Actions ---
 
-  // Tela 1: Criar Grupo -> vai pra Tela 2
-  const handleCreateGroup = async () => {
+  // Tela 1: Criar Grupo (Infiltrado ou Palavra Gêmea) -> vai pra Tela 2
+  const handleCreateGroup = async (mode: GameMode) => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch('/api/rooms', { method: 'POST' });
+      const res = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameMode: mode })
+      });
       const data = await res.json();
       if (data.success && data.roomCode) {
         setRoomCode(data.roomCode);
@@ -213,7 +226,7 @@ export default function HomePage() {
     }
   };
 
-  // Tela 3: Iniciar Partida (Jogar)
+  // Tela 3: Iniciar Partida (Jogar ou Iniciar Conexão)
   const handleStartGame = async () => {
     if (!roomCode || !activePlayerId) return;
     setLoading(true);
@@ -226,12 +239,62 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success && data.state) {
         setRoomState(data.state);
-        setScreen('game'); // Tela 4
+        if (data.state.gameMode === 'twin') {
+          setScreen('twin_game');
+        } else {
+          setScreen('game');
+        }
       } else {
         showToast(data.message || 'Erro ao iniciar');
       }
     } catch {
       showToast('Erro ao iniciar jogo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Palavra Gêmea: Enviar Palavra da Rodada
+  const handleSubmitTwinWord = async (word: string) => {
+    if (!roomCode || !activePlayerId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/rooms/${roomCode}/twin/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: activePlayerId, word })
+      });
+      const data = await res.json();
+      if (data.success && data.state) {
+        setRoomState(data.state);
+      } else {
+        showToast(data.message || 'Erro ao enviar palavra');
+      }
+    } catch {
+      showToast('Erro ao comunicar palavra');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Palavra Gêmea: Avançar Rodada
+  const handleNextTwinRound = async () => {
+    if (!roomCode || !activePlayerId) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/rooms/${roomCode}/twin/next`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: activePlayerId })
+      });
+      const data = await res.json();
+      if (data.success && data.state) {
+        setRoomState(data.state);
+      } else {
+        showToast(data.message || 'Erro ao avançar');
+      }
+    } catch {
+      showToast('Erro ao avançar rodada');
     } finally {
       setLoading(false);
     }
@@ -324,7 +387,7 @@ export default function HomePage() {
         showHomeBtn={screen !== 'home'}
       />
 
-      {/* Screen 1: Home (Criar ou Entrar) */}
+      {/* Screen 1: Home (Criar ou Entrar com seletor de modo) */}
       {screen === 'home' && (
         <ScreenHome
           onCreateGroup={handleCreateGroup}
@@ -366,7 +429,7 @@ export default function HomePage() {
         />
       )}
 
-      {/* Screen 4: Jogo / Sorteio e Revelação */}
+      {/* Screen 4: Jogo Infiltrado / Sorteio e Revelação */}
       {screen === 'game' && roomState && (
         <ScreenGame
           key={roomState.roundStartedAt || 'game'}
@@ -374,6 +437,18 @@ export default function HomePage() {
           onResetRound={handleResetRound}
           onRevealImpostor={handleRevealImpostor}
           isHost={roomState.isHost}
+        />
+      )}
+
+      {/* Screen 5: Jogo Palavra Gêmea (Modo Dupla) */}
+      {screen === 'twin_game' && roomState && (
+        <ScreenTwinGame
+          key={`twin-${roomState.twinRound}`}
+          roomState={roomState}
+          onSubmitWord={handleSubmitTwinWord}
+          onNextRound={handleNextTwinRound}
+          onResetGame={handleResetRound}
+          submitting={loading}
         />
       )}
 
