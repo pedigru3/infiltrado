@@ -8,6 +8,29 @@ export interface Theme {
 
 export const THEMES: Theme[] = [
   {
+    id: 'objetos',
+    name: 'Objetos',
+    emoji: '📦',
+    description: 'Itens do cotidiano, utilidades, ferramentas e acessórios.',
+    words: [
+      'Óculos', 'Guarda-Chuva', 'Espelho', 'Lanterna', 'Mochila', 'Chave',
+      'Carteira', 'Relógio de Pulso', 'Tesoura', 'Livro', 'Caneta', 'Lápis',
+      'Borracha', 'Caderno', 'Cafeteira', 'Ventilador', 'Controle Remoto', 'Garrafa Térmica',
+      'Cadeira', 'Abajur', 'Travesseiro', 'Martelo', 'Cadeado', 'Vassoura',
+      'Secador de Cabelo', 'Ferro de Passar', 'Micro-ondas', 'Air Fryer', 'Grampeador',
+      'Cofre', 'Isqueiro', 'Vela', 'Panela', 'Prato', 'Copo',
+      'Garfo', 'Colher', 'Escova de Dentes', 'Toalha de Banho', 'Mala de Viagem', 'Sapato',
+      'Boné', 'Cinto', 'Almofada', 'Fita Adesiva', 'Balde', 'Pente',
+      'Guarda-Sol', 'Binóculos', 'Quadro de Parede', 'Chave de Fenda', 'Alicate', 'Trena',
+      'Pregador de Roupa', 'Abridor de Garrafas', 'Saca-Rolhas', 'Cabide', 'Tapete', 'Cortina',
+      'Cobertor', 'Liquidificador', 'Batedeira', 'Ralador', 'Jarra de Vidro', 'Xícara',
+      'Caneca', 'Chaleira', 'Termômetro', 'Despertador', 'Fósforo', 'Porta-Retrato',
+      'Vaso de Planta', 'Lâmpada', 'Pinça', 'Cortador de Unha', 'Escova de Cabelo', 'Perfume',
+      'Saboneteira', 'Chinelo', 'Cachecol', 'Gravata', 'Bolsa', 'Estojo',
+      'Apontador', 'Régua', 'Clips de Papel', 'Pasta de Documentos', 'Fechadura', 'Maçaneta'
+    ]
+  },
+  {
     id: 'comidas',
     name: 'Comidas & Bebidas',
     emoji: '🍔',
@@ -92,24 +115,6 @@ export const THEMES: Theme[] = [
     ]
   },
   {
-    id: 'objetos',
-    name: 'Objetos & Tecnologia',
-    emoji: '📱',
-    description: 'Aparelhos, ferramentas e itens do cotidiano.',
-    words: [
-      'Celular', 'Fone Bluetooth', 'Drone', 'Videogame', 'Smartwatch',
-      'Câmera Fotográfica', 'Microfone', 'Óculos Escuros', 'Guarda-Chuva', 'Espelho',
-      'Lanterna', 'Violão', 'Mochila', 'Capacete', 'Skate', 'Controle Remoto',
-      'Cafeteira', 'Ventilador', 'Bicicleta', 'Tênis de Corrida', 'Teclado Mecânico',
-      'Televisão 4K', 'Tablet', 'Aspirador Robô', 'Powerbank', 'Ring Light',
-      'Caixa de Som Bluetooth', 'Patinete Elétrico', 'Impressora 3D', 'Binóculos',
-      'Guitarra Elétrica', 'Mala de Viagem', 'Carteira', 'Garrafa Térmica',
-      'Furadeira', 'Projetor', 'Óculos VR', 'Relógio de Pulso', 'Guarda-Sol',
-      'Prancha de Surfe', 'Patinete', 'Bateria Musical', 'Micro-ondas', 'Air Fryer',
-      'Ferro de Passar', 'Calculadora', 'Secador de Cabelo', 'Cofre', 'Tesoura', 'Chaveiro'
-    ]
-  },
-  {
     id: 'lazer',
     name: 'Lazer',
     emoji: '⚽',
@@ -142,6 +147,42 @@ export const THEMES: Theme[] = [
       'Pular Elástico', 'Carrinho de Controle Remoto', 'Jogo da Velha', 'Quebra-Cabeça',
       'Uno', 'Dominó', 'Videogame Retrô', 'Bicicleta com Rodinhas', 'Chupeta',
       'Mamadeira', 'Berço', 'Fralda', 'Pijama de Bichinho', 'Ciranda', 'Mímica'
+    ]
+  },
+  {
+    id: 'superherois',
+    name: 'Super-Heróis',
+    emoji: '🦸‍♂️',
+    description: 'Heróis, heroínas e vigilantes dos quadrinhos.',
+    words: [
+      'Homem-Aranha', 'Batman', 'Homem de Ferro', 'Superman', 'Mulher-Maravilha',
+      'Thor', 'Capitão América', 'Wolverine', 'Hulk', 'Flash', 'Deadpool',
+      'Doutor Estranho', 'Pantera Negra', 'Aquaman', 'Viúva Negra', 'Robin',
+      'Lanterna Verde', 'Arqueiro Verde', 'Shazam', 'Ciclope', 'Tempestade',
+      'Homem-Formiga', 'Demolidor', 'Noturno', 'Motoqueiro Fantasma', 'Gavião Arqueiro',
+      'Feiticeira Escarlate', 'Visão', 'Capitã Marvel', 'Senhor das Estrelas', 'Groot',
+      'Rocket Raccoon', 'Soldado Invernal', 'Ciborgue', 'Ravena', 'Estelar',
+      'Mutano', 'Supergirl', 'Batgirl', 'Besouro Azul', 'Justiceiro', 'Blade',
+      'Gambit', 'Venom', 'Goku', 'Saitama', 'Ben 10', 'Meninas Superpoderosas',
+      'Super Choque', 'Homem-Borracha'
+    ]
+  },
+  {
+    id: 'tecnologia',
+    name: 'Tecnologia',
+    emoji: '💻',
+    description: 'Gadgets, inovações, inteligência artificial e universo digital.',
+    words: [
+      'Smartphone', 'Notebook', 'Inteligência Artificial', 'Drone', 'Videogame',
+      'Smartwatch', 'Impressora 3D', 'Óculos VR (Realidade Virtual)', 'Fone Bluetooth', 'Robô',
+      'Satélite', 'Câmera Digital', 'Tablet', 'Roteador Wi-Fi', 'Processador',
+      'Holograma', 'Carro Elétrico', 'Powerbank', 'Pendrive', 'Teclado Mecânico',
+      'Mouse sem Fio', 'Placa de Vídeo', 'Nuvem (Cloud)', 'Ring Light', 'Alexa (Assistente Virtual)',
+      'Caixa de Som Inteligente', 'GPS', 'Bitcoin', 'Algoritmo', 'Fibra Óptica',
+      'Antena 5G', 'Monitor Gamer', 'Scanner Biométrico', 'Webcam', 'Painel Solar',
+      'Patinete Elétrico', 'Foguete Espacial', 'Carregador por Indução', 'Smart TV', 'Firewall',
+      'Supercomputador', 'Headset Gamer', 'Sensor de Movimento', 'Reconhecimento Facial', 'Nanotecnologia',
+      'Criptografia', 'Smartband', 'Microfone Condensador', 'Bateria de Lítio', 'Projetor Laser'
     ]
   }
 ];

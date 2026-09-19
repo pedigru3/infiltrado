@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: 'Infiltrado - Jogo de Dedução Secreta',
   description: 'Descubra quem é o impostor! Jogo social moderno, simples e otimizado para celulares.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export const viewport: Viewport = {

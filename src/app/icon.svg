@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Dark Rounded Container -->
+  <rect width="512" height="512" rx="128" fill="#141518" />
+  
+  <!-- Outer Subtle Radar Border -->
+  <rect x="8" y="8" width="496" height="496" rx="120" stroke="#c8f560" stroke-opacity="0.15" stroke-width="8" stroke-dasharray="16 16" />
+
+  <!-- Spy Fedora Crown -->
+  <path
+    d="M152 208C156 112 192 92 256 92C320 92 356 112 360 208H152Z"
+    fill="#c8f560"
+  />
+  
+  <!-- Hat Ribbon -->
+  <path
+    d="M160 190C182 180 218 176 256 176C294 176 330 180 352 190V208H160V190Z"
+    fill="#141518"
+  />
+
+  <!-- Hat Brim -->
+  <ellipse cx="256" cy="208" rx="172" ry="36" fill="#c8f560" />
+
+  <!-- Sunglasses Blue Frame -->
+  <rect x="136" y="252" width="104" height="68" rx="24" fill="#2b66ff" />
+  <rect x="272" y="252" width="104" height="68" rx="24" fill="#2b66ff" />
+  <!-- Sunglasses Bridge -->
+  <rect x="230" y="266" width="52" height="18" rx="9" fill="#2b66ff" />
+
+  <!-- Sunglasses Dark Polarized Lenses -->
+  <rect x="148" y="264" width="80" height="44" rx="14" fill="#141518" />
+  <rect x="284" y="264" width="80" height="44" rx="14" fill="#141518" />
+
+  <!-- Neon Lime Lens Reflections -->
+  <path d="M160 274L190 274" stroke="#c8f560" stroke-width="8" stroke-linecap="round" />
+  <path d="M296 274L326 274" stroke="#c8f560" stroke-width="8" stroke-linecap="round" />
+
+  <!-- Trenchcoat Collar Accent -->
+  <path
+    d="M136 384L204 432L256 376L308 432L376 384L404 472H108L136 384Z"
+    fill="#2b66ff"
+  />
+  <!-- Tie Accent -->
+  <path d="M244 388L256 440L268 388Z" fill="#c8f560" />
+</svg>

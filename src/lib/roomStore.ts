@@ -134,7 +134,7 @@ export async function createRoom(): Promise<Room> {
     code,
     createdAt: Date.now(),
     hostId: '',
-    selectedThemeId: 'comidas',
+    selectedThemeId: 'objetos',
     status: 'lobby',
     currentThemeName: null,
     currentWord: null,
