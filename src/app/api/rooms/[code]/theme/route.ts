@@ -17,7 +17,7 @@ export async function POST(
       );
     }
 
-    const room = changeRoomTheme(code, playerId, themeId);
+    const room = await changeRoomTheme(code, playerId, themeId);
     const clientState = getClientState(room, playerId);
 
     return NextResponse.json({

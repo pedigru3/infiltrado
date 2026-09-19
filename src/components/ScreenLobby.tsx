@@ -13,11 +13,11 @@ interface ScreenLobbyProps {
 }
 
 const AVATAR_COLORS = [
-  'bg-[#dbeafe] text-[#1e40af]', // Azul
+  'bg-[#141518] text-white', // Carvão
   'bg-[#fde5cd] text-[#9a3412]', // Pêssego
   'bg-[#c8f560] text-[#141518]', // Lima
-  'bg-[#e0f2fe] text-[#0369a1]', // Azul Claro
-  'bg-[#fce7f3] text-[#9d174d]', // Rosa
+  'bg-[#e2e8f0] text-[#334155]', // Slate Neutro
+  'bg-[#fce7f3] text-[#9d174d]', // Rosa Suave
 ];
 
 export const ScreenLobby: React.FC<ScreenLobbyProps> = ({
@@ -86,18 +86,18 @@ export const ScreenLobby: React.FC<ScreenLobbyProps> = ({
         {/* Selected Theme Badge */}
         <div
           onClick={onOpenThemes}
-          className="flex items-center justify-between p-4 rounded-2xl bg-[#dbeafe] text-[#1e40af] cursor-pointer hover:opacity-95 transition-all shadow-xs"
+          className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#141518]/8 text-[#141518] cursor-pointer hover:border-[#141518]/20 transition-all shadow-xs"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl">{currentTheme.emoji}</span>
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b6f7b]">
                 Tema Selecionado
               </span>
-              <span className="text-sm font-extrabold">{currentTheme.name}</span>
+              <span className="text-sm font-extrabold text-[#141518]">{currentTheme.name}</span>
             </div>
           </div>
-          <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-white/60">
+          <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-[#f5f5f0] text-[#141518] hover:bg-[#141518] hover:text-[#c8f560] transition-colors">
             Trocar
           </span>
         </div>

@@ -10,7 +10,7 @@ export async function POST(
     const body = await request.json();
     const { playerId } = body;
 
-    const room = resetRound(code);
+    const room = await resetRound(code);
     const clientState = getClientState(room, playerId || '');
 
     return NextResponse.json({

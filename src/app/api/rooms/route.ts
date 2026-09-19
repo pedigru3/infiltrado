@@ -3,7 +3,7 @@ import { createRoom, getRoom } from '@/lib/roomStore';
 
 export async function POST() {
   try {
-    const room = createRoom();
+    const room = await createRoom();
     return NextResponse.json({
       success: true,
       roomCode: room.code
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const room = getRoom(code);
+  const room = await getRoom(code);
   if (!room) {
     return NextResponse.json(
       { success: false, message: 'Sala não encontrada ou expirada' },

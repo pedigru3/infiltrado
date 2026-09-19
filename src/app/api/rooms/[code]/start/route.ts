@@ -17,7 +17,7 @@ export async function POST(
       );
     }
 
-    const room = startGameRound(code, playerId);
+    const room = await startGameRound(code, playerId);
     const clientState = getClientState(room, playerId);
 
     return NextResponse.json({

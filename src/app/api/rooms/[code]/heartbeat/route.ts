@@ -17,7 +17,7 @@ export async function POST(
       );
     }
 
-    const room = updateHeartbeat(code, playerId, playerName);
+    const room = await updateHeartbeat(code, playerId, playerName);
 
     if (!room) {
       return NextResponse.json(

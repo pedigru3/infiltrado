@@ -1,3 +1,4 @@
+import { Redis } from '@upstash/redis';
 import { THEMES, getRandomWordFromTheme } from '@/data/themes';
 
 export interface Player {
@@ -48,26 +49,87 @@ declare global {
   var __infiltrado_rooms__: Map<string, Room> | undefined;
 }
 
-const rooms: Map<string, Room> = globalThis.__infiltrado_rooms__ || new Map<string, Room>();
-globalThis.__infiltrado_rooms__ = rooms;
+const memoryRooms: Map<string, Room> = globalThis.__infiltrado_rooms__ || new Map<string, Room>();
+globalThis.__infiltrado_rooms__ = memoryRooms;
+
+// Inicializa cliente Upstash Redis se configurado
+let redis: Redis | null = null;
+if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+  try {
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  } catch (err) {
+    console.error('Falha ao conectar com Upstash Redis, usando fallback de memória:', err);
+  }
+}
 
 // 45 segundos de tolerância para quedas temporárias de rede e trocas de app no celular
 const HEARTBEAT_TIMEOUT_MS = 45000;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
-function generateUniqueCode(): string {
+function generateRandomCode(): string {
   let code = '';
   for (let i = 0; i < 4; i++) {
     code += CODE_CHARS.charAt(Math.floor(Math.random() * CODE_CHARS.length));
   }
-  if (rooms.has(code)) {
-    return generateUniqueCode();
-  }
   return code;
 }
 
-export function createRoom(): Room {
-  const code = generateUniqueCode();
+async function fetchRoom(code: string): Promise<Room | null> {
+  const cleanCode = code.toUpperCase().trim();
+  if (redis) {
+    try {
+      const data = await redis.get<Room>(`infiltrado:room:${cleanCode}`);
+      if (data) {
+        memoryRooms.set(cleanCode, data);
+        return data;
+      }
+    } catch (err) {
+      console.error('Erro ao ler sala no Redis:', err);
+    }
+  }
+  return memoryRooms.get(cleanCode) || null;
+}
+
+async function saveRoom(room: Room): Promise<void> {
+  const cleanCode = room.code.toUpperCase().trim();
+  memoryRooms.set(cleanCode, room);
+
+  if (redis) {
+    try {
+      // 24h de TTL para expirar salas abandonadas automaticamente
+      await redis.set(`infiltrado:room:${cleanCode}`, room, { ex: 86400 });
+    } catch (err) {
+      console.error('Erro ao salvar sala no Redis:', err);
+    }
+  }
+}
+
+async function deleteRoom(code: string): Promise<void> {
+  const cleanCode = code.toUpperCase().trim();
+  memoryRooms.delete(cleanCode);
+
+  if (redis) {
+    try {
+      await redis.del(`infiltrado:room:${cleanCode}`);
+    } catch (err) {
+      console.error('Erro ao deletar sala no Redis:', err);
+    }
+  }
+}
+
+export async function createRoom(): Promise<Room> {
+  let code = '';
+  let attempts = 0;
+  while (attempts < 10) {
+    code = generateRandomCode();
+    const existing = await fetchRoom(code);
+    if (!existing) break;
+    attempts++;
+  }
+
   const room: Room = {
     code,
     createdAt: Date.now(),
@@ -80,24 +142,31 @@ export function createRoom(): Room {
     roundStartedAt: null,
     players: []
   };
-  rooms.set(code, room);
+
+  await saveRoom(room);
   return room;
 }
 
-export function getRoom(code: string): Room | undefined {
-  const room = rooms.get(code.toUpperCase());
+export async function getRoom(code: string): Promise<Room | undefined> {
+  const room = await fetchRoom(code);
   if (room) {
-    cleanOfflinePlayers(room);
+    const changed = cleanOfflinePlayers(room);
+    if (changed) {
+      await saveRoom(room);
+    }
+    return room;
   }
-  return room;
+  return undefined;
 }
 
-export function cleanOfflinePlayers(room: Room): void {
+export function cleanOfflinePlayers(room: Room): boolean {
   const now = Date.now();
   const activePlayers = room.players.filter((p) => now - p.lastSeen <= HEARTBEAT_TIMEOUT_MS);
+  let changed = false;
 
   if (activePlayers.length !== room.players.length) {
     room.players = activePlayers;
+    changed = true;
 
     // Se o líder saiu, passa liderança para o próximo jogador online
     if (activePlayers.length > 0) {
@@ -119,20 +188,17 @@ export function cleanOfflinePlayers(room: Room): void {
     }
   }
 
-  // Deleta salas vazias apenas se tiverem mais de 10 minutos de inatividade (protege criação recente)
-  if (room.players.length === 0 && now - room.createdAt > 10 * 60 * 1000) {
-    rooms.delete(room.code);
-  }
+  return changed;
 }
 
-export function joinRoom(
+export async function joinRoom(
   roomCode: string,
   playerId: string,
   playerName: string,
   isHostReq = false
-): { room: Room; player: Player } {
+): Promise<{ room: Room; player: Player }> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
 
   if (!room) {
     throw new Error('Sala não encontrada ou encerrada');
@@ -164,23 +230,24 @@ export function joinRoom(
     }
   }
 
+  await saveRoom(room);
   return { room, player: existingPlayer };
 }
 
-export function updateHeartbeat(
+export async function updateHeartbeat(
   roomCode: string,
   playerId: string,
   playerName?: string
-): Room | null {
+): Promise<Room | null> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
   if (!room) return null;
 
   let player = room.players.find((p) => p.id === playerId);
   if (player) {
     player.lastSeen = Date.now();
   } else if (playerName && playerName.trim()) {
-    // Auto-reconexão do jogador caso a aba tenha suspendido
+    // Auto-reconexão do jogador caso tenha suspendido
     player = {
       id: playerId,
       name: playerName.trim(),
@@ -196,33 +263,40 @@ export function updateHeartbeat(
   }
 
   cleanOfflinePlayers(room);
+  await saveRoom(room);
   return room;
 }
 
-export function removePlayer(roomCode: string, playerId: string): void {
+export async function removePlayer(roomCode: string, playerId: string): Promise<void> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
   if (!room) return;
 
   room.players = room.players.filter((p) => p.id !== playerId);
   cleanOfflinePlayers(room);
+  if (room.players.length === 0 && Date.now() - room.createdAt > 10 * 60 * 1000) {
+    await deleteRoom(cleanCode);
+  } else {
+    await saveRoom(room);
+  }
 }
 
-export function changeRoomTheme(roomCode: string, playerId: string, themeId: string): Room {
+export async function changeRoomTheme(roomCode: string, playerId: string, themeId: string): Promise<Room> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
   if (!room) throw new Error('Sala não encontrada');
 
   const themeExists = THEMES.some((t) => t.id === themeId);
   if (!themeExists) throw new Error('Tema inválido');
 
   room.selectedThemeId = themeId;
+  await saveRoom(room);
   return room;
 }
 
-export function startGameRound(roomCode: string, playerId: string): Room {
+export async function startGameRound(roomCode: string, playerId: string): Promise<Room> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
   if (!room) throw new Error('Sala não encontrada');
 
   cleanOfflinePlayers(room);
@@ -245,12 +319,13 @@ export function startGameRound(roomCode: string, playerId: string): Room {
     p.role = p.id === impostor.id ? 'impostor' : 'player';
   });
 
+  await saveRoom(room);
   return room;
 }
 
-export function resetRound(roomCode: string): Room {
+export async function resetRound(roomCode: string): Promise<Room> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
   if (!room) throw new Error('Sala não encontrada');
 
   room.status = 'lobby';
@@ -261,15 +336,17 @@ export function resetRound(roomCode: string): Room {
     p.role = undefined;
   });
 
+  await saveRoom(room);
   return room;
 }
 
-export function revealImpostor(roomCode: string): Room {
+export async function revealImpostor(roomCode: string): Promise<Room> {
   const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
+  const room = await fetchRoom(cleanCode);
   if (!room) throw new Error('Sala não encontrada');
 
   room.status = 'ended';
+  await saveRoom(room);
   return room;
 }
 

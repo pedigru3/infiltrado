@@ -24,7 +24,7 @@ export async function POST(
     }
 
     if (playerId) {
-      removePlayer(code, playerId);
+      await removePlayer(code, playerId);
     }
 
     return NextResponse.json({ success: true });
