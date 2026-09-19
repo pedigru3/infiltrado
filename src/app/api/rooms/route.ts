@@ -1,23 +1,12 @@
 import { NextResponse } from 'next/server';
-import { createRoom, getRoom, GameMode } from '@/lib/roomStore';
+import { createRoom, getRoom } from '@/lib/roomStore';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
-    let gameMode: GameMode = 'infiltrado';
-    try {
-      const body = await request.json();
-      if (body.gameMode === 'twin' || body.gameMode === 'infiltrado') {
-        gameMode = body.gameMode;
-      }
-    } catch {
-      // No body or empty body, default to 'infiltrado'
-    }
-
-    const room = createRoom(gameMode);
+    const room = createRoom();
     return NextResponse.json({
       success: true,
-      roomCode: room.code,
-      gameMode: room.gameMode
+      roomCode: room.code
     });
   } catch (err: unknown) {
     const error = err as Error;
@@ -50,7 +39,6 @@ export async function GET(request: Request) {
   return NextResponse.json({
     success: true,
     code: room.code,
-    gameMode: room.gameMode,
     playersCount: room.players.length
   });
 }

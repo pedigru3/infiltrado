@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowLeft, UserCircle2, ArrowRight, Play, LogIn } from 'lucide-react';
 
 interface ScreenNameProps {
   isHost: boolean;
@@ -29,62 +28,46 @@ export const ScreenName: React.FC<ScreenNameProps> = ({
     }
   };
 
-  // Botão Iniciar se for quem criou o grupo, ou Entrar se for convidado
-  const buttonText = isHost ? 'Iniciar' : 'Entrar';
+  const buttonText = isHost ? 'Iniciar Sala' : 'Entrar na Sala';
 
   return (
     <div className="flex-1 flex flex-col justify-center my-auto animate-in fade-in duration-300">
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 relative">
+      <div className="bg-white rounded-[32px] p-7 sm:p-8 shadow-soft border border-[#141518]/6">
         <button
           id="btn-back-from-name"
           onClick={onBack}
-          className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all cursor-pointer mb-4"
+          className="text-xs font-bold text-[#6b6f7b] hover:text-[#141518] transition-colors cursor-pointer mb-5 flex items-center gap-1.5"
           aria-label="Voltar"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <span>← Voltar</span>
         </button>
-
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-indigo-300 shadow-md shadow-indigo-500/10">
-            <UserCircle2 className="w-9 h-9" />
-          </div>
-
-          <h2 className="text-2xl font-black text-white tracking-tight mb-1.5">
-            {isHost ? 'Criando Grupo' : `Entrando no Grupo`}
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300/80">
-            {isHost
-              ? 'Defina seu apelido para assumir a liderança da sala'
-              : `Sala conectada: ${roomCode}`}
-          </p>
-        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="user-name-input"
-              className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
+              className="block text-2xl font-bold tracking-wider mb-2"
             >
-              insira o seu nome
+              Insira o seu nome
             </label>
             <input
               id="user-name-input"
               type="text"
               maxLength={20}
-              placeholder="Digite seu nome..."
+              placeholder="Digite seu apelido..."
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
               autoComplete="name"
               required
-              className="w-full py-4 px-5 bg-slate-950/80 border-2 border-white/15 focus:border-cyan-400 rounded-2xl text-base font-bold text-white placeholder:text-slate-600 outline-none transition-all shadow-inner"
+              className="w-full py-4 px-5 bg-[#f5f5f0] border-2 border-transparent focus:border-[#141518] focus:bg-white rounded-2xl text-base font-bold text-[#141518] placeholder:text-[#a0a4b0] outline-none transition-all"
             />
           </div>
 
           {errorMessage && (
             <div
               id="name-error-msg"
-              className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-semibold text-center animate-in shake"
+              className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold text-center"
             >
               {errorMessage}
             </div>
@@ -94,10 +77,9 @@ export const ScreenName: React.FC<ScreenNameProps> = ({
             id="btn-submit-name"
             type="submit"
             disabled={loading || !name.trim()}
-            className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-extrabold text-base shadow-lg shadow-cyan-500/30 hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 px-6 rounded-full bg-[#c8f560] hover:bg-[#b8ec4b] text-[#141518] font-extrabold text-base transition-all active:scale-[0.98] cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isHost ? <Play className="w-5 h-5 fill-white" /> : <LogIn className="w-5 h-5" />}
-            <span>{loading ? 'Entrando...' : buttonText}</span>
+            {loading ? 'Conectando...' : buttonText}
           </button>
         </form>
       </div>

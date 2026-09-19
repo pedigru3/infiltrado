@@ -1,17 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { Header } from '@/components/Header';
 import { ScreenHome } from '@/components/ScreenHome';
 import { ScreenEnterCode } from '@/components/ScreenEnterCode';
 import { ScreenName } from '@/components/ScreenName';
 import { ScreenLobby } from '@/components/ScreenLobby';
 import { ScreenGame } from '@/components/ScreenGame';
-import { ScreenTwinGame } from '@/components/ScreenTwinGame';
 import { ThemeModal } from '@/components/ThemeModal';
-import { ClientRoomState, GameMode } from '@/lib/roomStore';
+import { ClientRoomState } from '@/lib/roomStore';
 
-type AppScreen = 'home' | 'enter_code' | 'name' | 'lobby' | 'game' | 'twin_game';
+type AppScreen = 'home' | 'enter_code' | 'name' | 'lobby' | 'game';
 
 function subscribeToStorage(callback: () => void) {
   if (typeof window === 'undefined') return () => {};
@@ -34,6 +33,11 @@ function getPlayerNameSnapshot(): string {
   return localStorage.getItem('infiltrado_player_name') || '';
 }
 
+function getSavedRoomCodeSnapshot(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem('infiltrado_room_code') || '';
+}
+
 export default function HomePage() {
   const [screen, setScreen] = useState<AppScreen>('home');
   const [roomCode, setRoomCode] = useState<string>('');
@@ -41,6 +45,7 @@ export default function HomePage() {
 
   const storedPlayerId = useSyncExternalStore(subscribeToStorage, getPlayerIdSnapshot, () => '');
   const storedPlayerName = useSyncExternalStore(subscribeToStorage, getPlayerNameSnapshot, () => '');
+  const savedRoomCode = useSyncExternalStore(subscribeToStorage, getSavedRoomCodeSnapshot, () => '');
 
   const [playerId, setPlayerId] = useState<string>('');
   const [playerName, setPlayerName] = useState<string>('');
@@ -53,15 +58,53 @@ export default function HomePage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
+  const [hasAttemptedAutoRejoin, setHasAttemptedAutoRejoin] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Heartbeat function to maintain presence online and receive game state
+  // 1. Auto-recuperação de sessão do localStorage ao abrir/recarregar a página
+  useEffect(() => {
+    if (hasAttemptedAutoRejoin) return;
+    setHasAttemptedAutoRejoin(true);
+
+    if (savedRoomCode && activePlayerId && activePlayerName) {
+      // Tenta reconectar diretamente à sala salva
+      fetch(`/api/rooms/${savedRoomCode}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playerId: activePlayerId,
+          playerName: activePlayerName,
+          isHost: false
+        })
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.state) {
+            setRoomCode(savedRoomCode);
+            setRoomState(data.state);
+            if (data.state.status === 'drawing' || data.state.status === 'playing' || data.state.status === 'ended') {
+              setScreen('game');
+            } else {
+              setScreen('lobby');
+            }
+          } else {
+            // Sala expirada ou inválida, limpa o localStorage
+            localStorage.removeItem('infiltrado_room_code');
+          }
+        })
+        .catch(() => {
+          // Erro de rede na reconexão inicial
+        });
+    }
+  }, [savedRoomCode, activePlayerId, activePlayerName, hasAttemptedAutoRejoin]);
+
+  // 2. Heartbeat contínuo para manter a presença online ativa e sincronizar estado
   const sendHeartbeat = useCallback(async () => {
-    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game' && screen !== 'twin_game')) {
+    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game')) {
       return;
     }
 
@@ -77,38 +120,31 @@ export default function HomePage() {
         const state: ClientRoomState = data.state;
         setRoomState(state);
 
-        // Transition between screens based on room status
+        // Transição suave entre lobby e tela de jogo
         if (state.status === 'drawing' || state.status === 'playing' || state.status === 'ended') {
           if (screen !== 'game') {
             setScreen('game');
           }
-        } else if (
-          state.status === 'twin_playing' ||
-          state.status === 'twin_revealed' ||
-          state.status === 'twin_matched'
-        ) {
-          if (screen !== 'twin_game') {
-            setScreen('twin_game');
-          }
         } else if (state.status === 'lobby') {
-          if (screen === 'game' || screen === 'twin_game') {
+          if (screen === 'game') {
             setScreen('lobby');
           }
         }
       } else if (res.status === 404 && data.message?.includes('não encontrada')) {
         showToast('A sala foi encerrada.');
+        localStorage.removeItem('infiltrado_room_code');
         setRoomState(null);
         setRoomCode('');
         setScreen('home');
       }
     } catch {
-      // Network hiccup transitório
+      // Oscilação temporária de rede (mantém o jogador conectado e tenta no próximo tick)
     }
   }, [roomCode, activePlayerId, activePlayerName, screen]);
 
-  // Heartbeat interval every 2.5 seconds
+  // Intervalo do Heartbeat a cada 2.5s
   useEffect(() => {
-    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game' && screen !== 'twin_game')) {
+    if (!roomCode || !activePlayerId || (screen !== 'lobby' && screen !== 'game')) {
       return;
     }
 
@@ -116,42 +152,14 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, [roomCode, activePlayerId, screen, sendHeartbeat]);
 
-  // Desconectar imediatamente apenas ao fechar a aba ou sair do site
-  useEffect(() => {
-    if (!roomCode || !activePlayerId) return;
+  // --- Ações do Jogo ---
 
-    const handleBeforeUnload = () => {
-      try {
-        const payload = JSON.stringify({ playerId: activePlayerId });
-        if (navigator.sendBeacon) {
-          navigator.sendBeacon(`/api/rooms/${roomCode}/leave`, payload);
-        }
-      } catch {
-        // Ignorado no encerramento da página
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('pagehide', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('pagehide', handleBeforeUnload);
-    };
-  }, [roomCode, activePlayerId]);
-
-  // --- Actions ---
-
-  // Tela 1: Criar Grupo (Infiltrado ou Palavra Gêmea) -> vai pra Tela 2
-  const handleCreateGroup = async (mode: GameMode) => {
+  // Tela 1: Criar Grupo -> vai pra Tela 2
+  const handleCreateGroup = async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      const res = await fetch('/api/rooms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameMode: mode })
-      });
+      const res = await fetch('/api/rooms', { method: 'POST' });
       const data = await res.json();
       if (data.success && data.roomCode) {
         setRoomCode(data.roomCode);
@@ -194,12 +202,13 @@ export default function HomePage() {
     }
   };
 
-  // Tela 2: Inserir Nome e Iniciar/Entrar -> vai pra Tela 3 (Lobby)
+  // Tela 2: Inserir Nome e Iniciar/Entrar -> Salva no localStorage e vai pra Tela 3 (Lobby)
   const handleSubmitName = async (name: string) => {
     setLoading(true);
     setErrorMessage(null);
     try {
       localStorage.setItem('infiltrado_player_name', name);
+      localStorage.setItem('infiltrado_room_code', roomCode);
       setPlayerName(name);
 
       const res = await fetch(`/api/rooms/${roomCode}/join`, {
@@ -226,7 +235,7 @@ export default function HomePage() {
     }
   };
 
-  // Tela 3: Iniciar Partida (Jogar ou Iniciar Conexão)
+  // Tela 3: Iniciar Partida (Jogar)
   const handleStartGame = async () => {
     if (!roomCode || !activePlayerId) return;
     setLoading(true);
@@ -239,62 +248,12 @@ export default function HomePage() {
       const data = await res.json();
       if (data.success && data.state) {
         setRoomState(data.state);
-        if (data.state.gameMode === 'twin') {
-          setScreen('twin_game');
-        } else {
-          setScreen('game');
-        }
+        setScreen('game'); // Tela 4
       } else {
         showToast(data.message || 'Erro ao iniciar');
       }
     } catch {
       showToast('Erro ao iniciar jogo');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Palavra Gêmea: Enviar Palavra da Rodada
-  const handleSubmitTwinWord = async (word: string) => {
-    if (!roomCode || !activePlayerId) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/rooms/${roomCode}/twin/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId: activePlayerId, word })
-      });
-      const data = await res.json();
-      if (data.success && data.state) {
-        setRoomState(data.state);
-      } else {
-        showToast(data.message || 'Erro ao enviar palavra');
-      }
-    } catch {
-      showToast('Erro ao comunicar palavra');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Palavra Gêmea: Avançar Rodada
-  const handleNextTwinRound = async () => {
-    if (!roomCode || !activePlayerId) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/rooms/${roomCode}/twin/next`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerId: activePlayerId })
-      });
-      const data = await res.json();
-      if (data.success && data.state) {
-        setRoomState(data.state);
-      } else {
-        showToast(data.message || 'Erro ao avançar');
-      }
-    } catch {
-      showToast('Erro ao avançar rodada');
     } finally {
       setLoading(false);
     }
@@ -356,8 +315,9 @@ export default function HomePage() {
     }
   };
 
-  // Sair da Sala
+  // Sair da Sala (limpa o localStorage e remove o jogador no servidor)
   const handleLeaveRoom = async () => {
+    localStorage.removeItem('infiltrado_room_code');
     if (roomCode && activePlayerId) {
       try {
         await fetch(`/api/rooms/${roomCode}/leave`, {
@@ -366,7 +326,7 @@ export default function HomePage() {
           body: JSON.stringify({ playerId: activePlayerId })
         });
       } catch {
-        // Ignored
+        // Ignorado
       }
     }
     setRoomState(null);
@@ -379,7 +339,7 @@ export default function HomePage() {
       <Header
         onBackHome={() => {
           if (screen !== 'home') {
-            if (confirm('Deseja realmente voltar ao início?')) {
+            if (confirm('Deseja realmente sair da sala e voltar ao início?')) {
               handleLeaveRoom();
             }
           }
@@ -387,7 +347,7 @@ export default function HomePage() {
         showHomeBtn={screen !== 'home'}
       />
 
-      {/* Screen 1: Home (Criar ou Entrar com seletor de modo) */}
+      {/* Screen 1: Home (Criar ou Entrar) */}
       {screen === 'home' && (
         <ScreenHome
           onCreateGroup={handleCreateGroup}
@@ -440,18 +400,6 @@ export default function HomePage() {
         />
       )}
 
-      {/* Screen 5: Jogo Palavra Gêmea (Modo Dupla) */}
-      {screen === 'twin_game' && roomState && (
-        <ScreenTwinGame
-          key={`twin-${roomState.twinRound}`}
-          roomState={roomState}
-          onSubmitWord={handleSubmitTwinWord}
-          onNextRound={handleNextTwinRound}
-          onResetGame={handleResetRound}
-          submitting={loading}
-        />
-      )}
-
       {/* Modal de Temas */}
       {roomState && (
         <ThemeModal
@@ -459,13 +407,13 @@ export default function HomePage() {
           selectedThemeId={roomState.selectedThemeId}
           onSelectTheme={handleSelectTheme}
           onClose={() => setIsThemeModalOpen(false)}
-          isHost={true}
+          isHost={roomState.isHost}
         />
       )}
 
       {/* Toast Notificação */}
       {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-slate-800/95 border border-white/20 text-white text-xs font-bold shadow-2xl backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-full bg-[#141518] text-[#c8f560] text-xs font-extrabold shadow-xl border border-white/10 animate-in fade-in duration-200">
           {toastMessage}
         </div>
       )}

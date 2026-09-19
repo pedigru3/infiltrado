@@ -1,7 +1,5 @@
 import { THEMES, getRandomWordFromTheme } from '@/data/themes';
 
-export type GameMode = 'infiltrado' | 'twin';
-
 export interface Player {
   id: string;
   name: string;
@@ -10,27 +8,10 @@ export interface Player {
   role?: 'player' | 'impostor';
 }
 
-export type RoomStatus =
-  | 'lobby'
-  | 'drawing'
-  | 'playing'
-  | 'ended'
-  | 'twin_playing'
-  | 'twin_revealed'
-  | 'twin_matched';
-
-export interface TwinRoundHistory {
-  round: number;
-  p1Name: string;
-  p1Word: string;
-  p2Name: string;
-  p2Word: string;
-  matched: boolean;
-}
+export type RoomStatus = 'lobby' | 'drawing' | 'playing' | 'ended';
 
 export interface Room {
   code: string;
-  gameMode: GameMode;
   createdAt: number;
   hostId: string;
   selectedThemeId: string;
@@ -40,18 +21,10 @@ export interface Room {
   impostorId: string | null;
   roundStartedAt: number | null;
   players: Player[];
-
-  // Palavra Gêmea state:
-  twinRound: number;
-  twinInitialPrompt: string | null;
-  twinSubmissions: Record<string, string>;
-  twinHistory: TwinRoundHistory[];
-  twinMatched: boolean;
 }
 
 export interface ClientRoomState {
   code: string;
-  gameMode: GameMode;
   hostId: string;
   isHost: boolean;
   selectedThemeId: string;
@@ -63,20 +36,11 @@ export interface ClientRoomState {
     isHost: boolean;
     isCurrent: boolean;
   }[];
-  // Infiltrado specific:
+  // Player specific secrets:
   myRole: 'player' | 'impostor' | null;
   themeName: string | null;
-  secretWord: string | null;
-  impostorName?: string | null;
-
-  // Palavra Gêmea specific:
-  twinRound: number;
-  twinInitialPrompt: string | null;
-  twinSubmitted: boolean;
-  twinPartnerSubmitted: boolean;
-  twinHistory: TwinRoundHistory[];
-  twinCurrentWords: { p1Name: string; p1Word: string; p2Name: string; p2Word: string } | null;
-  twinMatched: boolean;
+  secretWord: string | null; // null if impostor!
+  impostorName?: string | null; // only revealed when status === 'ended'
 }
 
 declare global {
@@ -87,7 +51,8 @@ declare global {
 const rooms: Map<string, Room> = globalThis.__infiltrado_rooms__ || new Map<string, Room>();
 globalThis.__infiltrado_rooms__ = rooms;
 
-const HEARTBEAT_TIMEOUT_MS = 60000;
+// 45 segundos de tolerância para quedas temporárias de rede e trocas de app no celular
+const HEARTBEAT_TIMEOUT_MS = 45000;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 function generateUniqueCode(): string {
@@ -101,11 +66,10 @@ function generateUniqueCode(): string {
   return code;
 }
 
-export function createRoom(gameMode: GameMode = 'infiltrado'): Room {
+export function createRoom(): Room {
   const code = generateUniqueCode();
   const room: Room = {
     code,
-    gameMode,
     createdAt: Date.now(),
     hostId: '',
     selectedThemeId: 'comidas',
@@ -114,12 +78,7 @@ export function createRoom(gameMode: GameMode = 'infiltrado'): Room {
     currentWord: null,
     impostorId: null,
     roundStartedAt: null,
-    players: [],
-    twinRound: 1,
-    twinInitialPrompt: null,
-    twinSubmissions: {},
-    twinHistory: [],
-    twinMatched: false
+    players: []
   };
   rooms.set(code, room);
   return room;
@@ -140,6 +99,7 @@ export function cleanOfflinePlayers(room: Room): void {
   if (activePlayers.length !== room.players.length) {
     room.players = activePlayers;
 
+    // Se o líder saiu, passa liderança para o próximo jogador online
     if (activePlayers.length > 0) {
       const currentHostExists = activePlayers.some((p) => p.id === room.hostId);
       if (!currentHostExists) {
@@ -148,6 +108,7 @@ export function cleanOfflinePlayers(room: Room): void {
       }
     }
 
+    // Se o infiltrado saiu durante o jogo, volta para o lobby
     if (room.status !== 'lobby' && room.impostorId) {
       const impostorOnline = activePlayers.some((p) => p.id === room.impostorId);
       if (!impostorOnline) {
@@ -158,7 +119,8 @@ export function cleanOfflinePlayers(room: Room): void {
     }
   }
 
-  if (room.players.length === 0 && now - room.createdAt > 30 * 60 * 1000) {
+  // Deleta salas vazias apenas se tiverem mais de 10 minutos de inatividade (protege criação recente)
+  if (room.players.length === 0 && now - room.createdAt > 10 * 60 * 1000) {
     rooms.delete(room.code);
   }
 }
@@ -173,7 +135,7 @@ export function joinRoom(
   const room = rooms.get(cleanCode);
 
   if (!room) {
-    throw new Error('Sala não encontrada');
+    throw new Error('Sala não encontrada ou encerrada');
   }
 
   cleanOfflinePlayers(room);
@@ -218,6 +180,7 @@ export function updateHeartbeat(
   if (player) {
     player.lastSeen = Date.now();
   } else if (playerName && playerName.trim()) {
+    // Auto-reconexão do jogador caso a aba tenha suspendido
     player = {
       id: playerId,
       name: playerName.trim(),
@@ -257,20 +220,12 @@ export function changeRoomTheme(roomCode: string, playerId: string, themeId: str
   return room;
 }
 
-// =======================
-// INFILTRADO GAME LOGIC
-// =======================
-
 export function startGameRound(roomCode: string, playerId: string): Room {
   const cleanCode = roomCode.toUpperCase().trim();
   const room = rooms.get(cleanCode);
   if (!room) throw new Error('Sala não encontrada');
 
   cleanOfflinePlayers(room);
-
-  if (room.gameMode === 'twin') {
-    return startTwinGame(roomCode);
-  }
 
   if (room.players.length < 3) {
     throw new Error('São necessários no mínimo 3 jogadores online para iniciar a partida.');
@@ -306,13 +261,6 @@ export function resetRound(roomCode: string): Room {
     p.role = undefined;
   });
 
-  // Reset twin state as well
-  room.twinRound = 1;
-  room.twinInitialPrompt = null;
-  room.twinSubmissions = {};
-  room.twinHistory = [];
-  room.twinMatched = false;
-
   return room;
 }
 
@@ -325,94 +273,6 @@ export function revealImpostor(roomCode: string): Room {
   return room;
 }
 
-// ===========================
-// PALAVRA GÊMEA (TWIN) LOGIC
-// ===========================
-
-function normalizeWord(str: string): string {
-  return str
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-export function startTwinGame(roomCode: string): Room {
-  const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
-  if (!room) throw new Error('Sala não encontrada');
-
-  cleanOfflinePlayers(room);
-
-  if (room.players.length < 2) {
-    throw new Error('São necessários 2 jogadores online para o modo Palavra Gêmea.');
-  }
-
-  const theme = THEMES.find((t) => t.id === room.selectedThemeId) || THEMES[0];
-  room.twinRound = 1;
-  room.twinInitialPrompt = `${theme.emoji} ${theme.name}`;
-  room.twinSubmissions = {};
-  room.twinHistory = [];
-  room.twinMatched = false;
-  room.status = 'twin_playing';
-  room.roundStartedAt = Date.now();
-
-  return room;
-}
-
-export function submitTwinWord(roomCode: string, playerId: string, word: string): Room {
-  const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
-  if (!room) throw new Error('Sala não encontrada');
-
-  if (!word.trim()) throw new Error('Palavra não pode ser vazia');
-
-  room.twinSubmissions[playerId] = word.trim();
-
-  // Check if both players (2 players) have submitted
-  if (room.players.length >= 2) {
-    const p1 = room.players[0];
-    const p2 = room.players[1];
-    const w1 = room.twinSubmissions[p1.id];
-    const w2 = room.twinSubmissions[p2.id];
-
-    if (w1 && w2) {
-      const isMatch = normalizeWord(w1) === normalizeWord(w2);
-      room.twinMatched = isMatch;
-      room.twinHistory.push({
-        round: room.twinRound,
-        p1Name: p1.name,
-        p1Word: w1,
-        p2Name: p2.name,
-        p2Word: w2,
-        matched: isMatch
-      });
-
-      room.status = isMatch ? 'twin_matched' : 'twin_revealed';
-    }
-  }
-
-  return room;
-}
-
-export function nextTwinRound(roomCode: string): Room {
-  const cleanCode = roomCode.toUpperCase().trim();
-  const room = rooms.get(cleanCode);
-  if (!room) throw new Error('Sala não encontrada');
-
-  room.twinRound += 1;
-  room.twinSubmissions = {};
-  room.status = 'twin_playing';
-  room.roundStartedAt = Date.now();
-
-  return room;
-}
-
-// =======================
-// CLIENT STATE SERIALIZER
-// =======================
-
 export function getClientState(room: Room, playerId: string): ClientRoomState {
   const isHost = room.hostId === playerId;
   const player = room.players.find((p) => p.id === playerId);
@@ -424,28 +284,8 @@ export function getClientState(room: Room, playerId: string): ClientRoomState {
     impostorName = imp ? imp.name : null;
   }
 
-  // Palavra Gêmea calculations:
-  const isTwinRevealed =
-    room.status === 'twin_revealed' || room.status === 'twin_matched';
-  const partner = room.players.find((p) => p.id !== playerId);
-  const twinSubmitted = Boolean(room.twinSubmissions[playerId]);
-  const twinPartnerSubmitted = Boolean(partner && room.twinSubmissions[partner.id]);
-
-  let twinCurrentWords = null;
-  if (isTwinRevealed && room.players.length >= 2) {
-    const p1 = room.players[0];
-    const p2 = room.players[1];
-    twinCurrentWords = {
-      p1Name: p1.name,
-      p1Word: room.twinSubmissions[p1.id] || '',
-      p2Name: p2.name,
-      p2Word: room.twinSubmissions[p2.id] || ''
-    };
-  }
-
   return {
     code: room.code,
-    gameMode: room.gameMode,
     hostId: room.hostId,
     isHost,
     selectedThemeId: room.selectedThemeId,
@@ -460,14 +300,6 @@ export function getClientState(room: Room, playerId: string): ClientRoomState {
     myRole: player?.role || null,
     themeName: room.currentThemeName,
     secretWord: isImpostor ? null : room.currentWord,
-    impostorName,
-
-    twinRound: room.twinRound,
-    twinInitialPrompt: room.twinInitialPrompt,
-    twinSubmitted,
-    twinPartnerSubmitted,
-    twinHistory: room.twinHistory,
-    twinCurrentWords,
-    twinMatched: room.twinMatched
+    impostorName
   };
 }

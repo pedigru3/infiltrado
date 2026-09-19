@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { ClientRoomState } from '@/lib/roomStore';
-import { Eye, EyeOff, ShieldAlert, Sparkles, RotateCcw, HelpCircle, Trophy, Flame } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface ScreenGameProps {
@@ -33,7 +32,7 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
           origin: { y: 0.7 }
         });
       } catch {
-        // Ignorado se não disponível
+        // Ignorado se indisponível
       }
     }, 3200);
 
@@ -51,22 +50,21 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
   if (isDrawing) {
     return (
       <div className="flex-1 flex flex-col justify-center items-center text-center my-auto animate-in fade-in duration-300">
-        <div className="glass-panel-glow rounded-3xl p-8 sm:p-10 w-full max-w-sm flex flex-col items-center justify-center relative overflow-hidden">
-          {/* Radar spinner animado */}
-          <div className="relative w-28 h-28 mb-6 flex items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-cyan-400 border-r-indigo-500 animate-spin-fast" />
-            <div className="absolute inset-3 rounded-full border-2 border-transparent border-b-rose-500 border-l-purple-500 animate-spin-reverse" />
-            <div className="text-3xl animate-pulse-slow">🎲</div>
+        <div className="bg-[#141518] rounded-[32px] p-8 sm:p-10 w-full max-w-sm flex flex-col items-center justify-center shadow-card-dark relative overflow-hidden">
+          {/* Radar spinner limpo */}
+          <div className="relative w-24 h-24 mb-6 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full border-4 border-white/10 border-t-[#c8f560] animate-spin-clean" />
+            <div className="text-2xl">🎲</div>
           </div>
 
-          <h2 className="text-2xl font-black text-white tracking-tight mb-2">
+          <h2 className="text-2xl font-extrabold text-white tracking-tight mb-2">
             Sorteando palavra...
           </h2>
-          <p className="text-xs sm:text-sm text-slate-400 font-medium">
+          <p className="text-xs sm:text-sm text-[#9498a4]">
             Definindo papéis secretos e preparando a rodada...
           </p>
 
-          <div className="mt-6 flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-cyan-300">
+          <div className="mt-6 px-4 py-1.5 rounded-full bg-white/10 text-xs font-mono font-bold text-[#c8f560]">
             <span>Aguarde {drawingSecondsLeft}s</span>
           </div>
         </div>
@@ -78,29 +76,26 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
   return (
     <div className="flex-1 flex flex-col justify-between animate-in zoom-in-95 duration-300">
       <div className="flex-1 flex flex-col justify-center my-auto">
-        <div className="rounded-3xl p-6 sm:p-8 text-center bg-gradient-to-b from-slate-900/90 to-slate-950/90 border-2 border-cyan-400/40 shadow-2xl shadow-cyan-950/40 transition-all">
-          {/* Badge Neutro Idêntico */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider mb-5 shadow-md">
-            <span className="flex items-center gap-1.5 text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 px-3.5 py-1 rounded-full">
-              <Sparkles className="w-4 h-4 text-cyan-400" />
-              Informação da Rodada
-            </span>
+        <div className="bg-[#141518] rounded-[32px] p-7 sm:p-9 text-center shadow-card-dark text-white relative overflow-hidden">
+          {/* Badge Neutro */}
+          <div className="inline-block px-4 py-1 rounded-full bg-white/10 text-[#c8f560] text-xs font-extrabold uppercase tracking-wider mb-5">
+            Informação da Rodada
           </div>
 
           {/* Tema */}
           <div className="mb-4">
-            <span className="block text-[11px] font-extrabold uppercase tracking-widest text-slate-400 mb-0.5">
+            <span className="block text-[11px] font-bold uppercase tracking-widest text-[#9498a4] mb-0.5">
               Tema da Rodada
             </span>
-            <span className="text-base font-black text-cyan-300">
+            <span className="text-lg font-black text-[#c8f560]">
               {roomState.themeName || 'Geral'}
             </span>
           </div>
 
           {/* Caixa da Palavra Secreta / Infiltrado (Estrutura idêntica) */}
-          <div className="my-5 p-5 sm:p-6 rounded-2xl bg-black/40 border border-white/10 relative overflow-hidden">
+          <div className="my-5 p-6 rounded-2xl bg-white/5 border border-white/10 relative overflow-hidden">
             <div className="space-y-2">
-              <span className="block text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              <span className="block text-[11px] font-bold uppercase tracking-wider text-[#9498a4]">
                 Sua Palavra Secreta
               </span>
               <div className="py-2 min-h-[56px] flex items-center justify-center">
@@ -109,24 +104,24 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
                     <div className="flex flex-col items-center gap-1">
                       <span
                         id="secret-word-display"
-                        className="text-2xl sm:text-3xl font-black tracking-tight text-white select-none drop-shadow-md"
+                        className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white select-none"
                       >
                         Você é o Infiltrado
                       </span>
-                      <span className="text-xs text-slate-400 font-medium">
+                      <span className="text-xs text-[#9498a4] font-medium">
                         Tente não ser pego!
                       </span>
                     </div>
                   ) : (
                     <span
                       id="secret-word-display"
-                      className="text-3xl sm:text-4xl font-black tracking-tight text-white select-none drop-shadow-md"
+                      className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white select-none"
                     >
                       {roomState.secretWord}
                     </span>
                   )
                 ) : (
-                  <span className="text-2xl sm:text-3xl font-mono text-slate-600 select-none">
+                  <span className="text-2xl sm:text-3xl font-mono text-[#6b6f7b] select-none">
                     ••••••••••••
                   </span>
                 )}
@@ -136,59 +131,54 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
                 type="button"
                 id="btn-toggle-secret"
                 onClick={() => setShowSecret(!showSecret)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 cursor-pointer transition-all active:scale-95"
+                className="inline-block px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer transition-all active:scale-95"
               >
-                {showSecret ? (
-                  <>
-                    <EyeOff className="w-3.5 h-3.5" />
-                    <span>Ocultar para não espiarem</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>Mostrar Palavra</span>
-                  </>
-                )}
+                {showSecret ? 'Ocultar' : 'Mostrar Palavra'}
               </button>
             </div>
           </div>
 
           {/* Se a rodada foi finalizada e revelada */}
           {roomState.status === 'ended' && roomState.impostorName && (
-            <div className="mt-4 p-4 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-200 text-sm font-bold animate-in fade-in">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <Trophy className="w-4 h-4 text-amber-400" />
-                <span>Revelação Final</span>
-              </div>
-              <div>
-                O infiltrado era: <span className="text-white underline">{roomState.impostorName}</span>!
-              </div>
+            <div className="mt-4 p-4 rounded-2xl bg-[#fde5cd] text-[#9a3412] text-sm font-extrabold animate-in fade-in">
+              O infiltrado era: <span className="underline">{roomState.impostorName}</span>!
             </div>
           )}
         </div>
       </div>
 
-      {/* Ações da Rodada */}
+      {/* Ações da Rodada (Exclusivas do Líder) */}
       <div className="space-y-2.5 mt-4">
-        {roomState.status !== 'ended' && (
-          <button
-            id="btn-reveal-impostor"
-            onClick={onRevealImpostor}
-            className="w-full py-3.5 px-4 rounded-2xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-sm shadow-md shadow-rose-600/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <HelpCircle className="w-4 h-4" />
-            <span>Revelar Infiltrado</span>
-          </button>
-        )}
+        {roomState.isHost ? (
+          <>
+            {roomState.status !== 'ended' && (
+              <button
+                id="btn-reveal-impostor"
+                onClick={onRevealImpostor}
+                className="w-full py-3.5 px-4 rounded-full bg-[#ff4572] hover:bg-[#fa3c6e] text-white font-extrabold text-sm transition-all active:scale-[0.98] cursor-pointer shadow-sm"
+              >
+                Revelar Infiltrado
+              </button>
+            )}
 
-        <button
-          id="btn-reset-round"
-          onClick={onResetRound}
-          className="w-full py-3.5 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-white font-bold text-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span>Voltar ao Lobby / Nova Rodada</span>
-        </button>
+            <button
+              id="btn-reset-round"
+              onClick={onResetRound}
+              className="w-full py-4 px-6 rounded-full bg-[#c8f560] hover:bg-[#b8ec4b] text-[#141518] font-extrabold text-base transition-all active:scale-[0.98] cursor-pointer shadow-sm"
+            >
+              Nova Rodada / Voltar ao Lobby
+            </button>
+          </>
+        ) : (
+          <div className="w-full py-3.5 px-4 rounded-full bg-white border border-[#141518]/10 text-[#6b6f7b] font-bold text-xs text-center shadow-xs flex items-center justify-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span>
+              {roomState.status === 'ended'
+                ? 'Aguardando o líder iniciar a próxima rodada...'
+                : 'Partida em andamento.'}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

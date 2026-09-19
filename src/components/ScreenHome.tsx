@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { PlusCircle, LogIn, Users, ShieldAlert, HeartHandshake, Sparkles } from 'lucide-react';
-import { GameMode } from '@/lib/roomStore';
+import React from 'react';
 
 interface ScreenHomeProps {
-  onCreateGroup: (mode: GameMode) => void;
+  onCreateGroup: () => void;
   onGoToEnterCode: () => void;
   loading: boolean;
 }
@@ -15,113 +13,118 @@ export const ScreenHome: React.FC<ScreenHomeProps> = ({
   onGoToEnterCode,
   loading
 }) => {
-  const [selectedMode, setSelectedMode] = useState<GameMode>('infiltrado');
-
   return (
     <div className="flex-1 flex flex-col justify-center my-auto animate-in fade-in duration-300">
-      <div className="glass-panel rounded-3xl p-6 sm:p-8 text-center relative overflow-hidden">
-        {/* Glow ambient circle */}
-        <div className="absolute -top-16 -right-16 w-36 h-36 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-36 h-36 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-[#141518] rounded-[32px] p-7 sm:p-9 text-left shadow-card-dark relative overflow-hidden flex flex-col justify-between min-h-[480px]">
+        {/* Subtle Tactical Grid / Espionage Watermark */}
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
 
-        {/* Mode Selector Tabs */}
-        <div className="grid grid-cols-2 p-1.5 rounded-2xl bg-black/40 border border-white/10 mb-6">
-          <button
-            id="tab-mode-infiltrado"
-            type="button"
-            onClick={() => setSelectedMode('infiltrado')}
-            className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              selectedMode === 'infiltrado'
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <ShieldAlert className="w-3.5 h-3.5" />
-            <span>Infiltrado (3+)</span>
-          </button>
+        {/* Hero Spy / Espionage Graphic */}
+        <div className="relative z-10 w-full my-3 pointer-events-none select-none flex items-center justify-between">
+          {/* Main Spy Agent Character Illustration */}
+          <div className="relative flex items-center justify-center">
+            {/* Ambient Glow */}
+            <div className="absolute w-28 h-28 rounded-full bg-[#c8f560]/10 blur-xl" />
 
-          <button
-            id="tab-mode-twin"
-            type="button"
-            onClick={() => setSelectedMode('twin')}
-            className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              selectedMode === 'twin'
-                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <HeartHandshake className="w-3.5 h-3.5" />
-            <span>Palavra Gêmea (2)</span>
-          </button>
+            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" className="relative drop-shadow-md">
+              {/* Outer Tactical Radar Ring */}
+              <circle cx="60" cy="60" r="54" stroke="#c8f560" strokeOpacity="0.25" strokeWidth="1.5" strokeDasharray="4 4" />
+              <circle cx="60" cy="60" r="46" fill="#1b1d22" stroke="#2a2d35" strokeWidth="1.5" />
+
+              {/* Spy Hat Brim */}
+              <ellipse cx="60" cy="46" rx="38" ry="8" fill="#c8f560" />
+
+              {/* Spy Fedora Crown */}
+              <path
+                d="M36 46C37 26 45 22 60 22C75 22 83 26 84 46H36Z"
+                fill="#c8f560"
+              />
+              {/* Hat Ribbon */}
+              <path
+                d="M38 42C43 40 51 39 60 39C69 39 77 40 82 42V46H38V42Z"
+                fill="#141518"
+              />
+
+              {/* Sunglasses Frame */}
+              <rect x="33" y="56" width="23" height="15" rx="5" fill="#2b66ff" />
+              <rect x="64" y="56" width="23" height="15" rx="5" fill="#2b66ff" />
+              {/* Bridge */}
+              <rect x="54" y="59" width="12" height="4" rx="2" fill="#2b66ff" />
+
+              {/* Polarized Lenses */}
+              <rect x="36" y="59" width="17" height="9" rx="3" fill="#141518" />
+              <rect x="67" y="59" width="17" height="9" rx="3" fill="#141518" />
+
+              {/* Neon Lens Reflections */}
+              <path d="M38 61L44 61" stroke="#c8f560" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M69 61L75 61" stroke="#c8f560" strokeWidth="1.5" strokeLinecap="round" />
+
+              {/* Detective Trench Coat Collar */}
+              <path
+                d="M32 84L48 94L60 82L72 94L88 84L95 106H25L32 84Z"
+                fill="#2b66ff"
+              />
+              {/* Tie Accent */}
+              <path d="M57 85L60 96L63 85Z" fill="#c8f560" />
+            </svg>
+          </div>
+
+          {/* Right Floating Secret Dossier Badges */}
+          <div className="flex flex-col items-end gap-2.5">
+            {/* Fingerprint / Mystery Scanner Box */}
+            <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center relative backdrop-blur-sm p-2">
+              <div
+                className="w-16 h-16 bg-[#c8f560]"
+                style={{
+                  maskImage: 'url(/digital.svg)',
+                  WebkitMaskImage: 'url(/digital.svg)',
+                  maskSize: 'contain',
+                  WebkitMaskSize: 'contain',
+                  maskRepeat: 'no-repeat',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskPosition: 'center',
+                  WebkitMaskPosition: 'center',
+                }}
+              />
+            </div>
+
+            {/* Players Pill */}
+            <div className="text-[10px] font-medium text-[#9498a4] tracking-wide">
+              3 a 12 jogadores
+            </div>
+          </div>
         </div>
 
-        {selectedMode === 'infiltrado' ? (
-          <>
-            <div className="w-18 h-18 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-cyan-500/20 via-indigo-500/20 to-purple-500/20 border border-cyan-400/30 flex items-center justify-center text-cyan-300 shadow-lg shadow-cyan-500/10">
-              <ShieldAlert className="w-9 h-9" />
-            </div>
+        {/* Title & Copy */}
+        <div className="relative z-10 mb-6">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight leading-[1.15] mb-2.5">
+            Descubra o <br />
+            <span className="text-[#c8f560]">Infiltrado</span> na sala.
+          </h1>
+          <p className="text-sm text-[#9498a4] leading-relaxed">
+            Todos recebem a palavra secreta, exceto o espião. Façam perguntas discretas e descubram quem está fingindo!
+          </p>
+        </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
-              Jogo do Infiltrado
-            </h1>
-            <p className="text-sm text-slate-300/80 mb-7 leading-relaxed max-w-xs mx-auto">
-              Um dos jogadores é o impostor e não sabe a palavra secreta. Façam perguntas e descubram quem é!
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="w-18 h-18 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-purple-500/20 via-indigo-500/20 to-cyan-500/20 border border-purple-400/30 flex items-center justify-center text-purple-300 shadow-lg shadow-purple-500/10">
-              <HeartHandshake className="w-9 h-9" />
-            </div>
-
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
-              Palavra Gêmea
-            </h1>
-            <p className="text-sm text-slate-300/80 mb-7 leading-relaxed max-w-xs mx-auto">
-              Modo Dupla! Digitem palavras e tentem conectar pensamentos até falarem exatamente o mesmo termo.
-            </p>
-          </>
-        )}
-
-        <div className="flex flex-col gap-3.5">
+        {/* Action Buttons */}
+        <div className="relative z-10 flex flex-col gap-3">
           <button
             id="btn-create-group"
-            onClick={() => onCreateGroup(selectedMode)}
+            onClick={onCreateGroup}
             disabled={loading}
-            className={`w-full py-4 px-6 rounded-2xl text-white font-extrabold text-base shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-              selectedMode === 'infiltrado'
-                ? 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 shadow-cyan-500/30'
-                : 'bg-gradient-to-r from-purple-500 via-indigo-600 to-cyan-500 shadow-purple-500/30'
-            }`}
+            className="w-full py-4 px-6 rounded-full bg-[#c8f560] hover:bg-[#b8ec4b] text-[#141518] font-extrabold text-base transition-all active:scale-[0.98] cursor-pointer shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <PlusCircle className="w-5 h-5" />
-            <span>
-              {loading
-                ? 'Criando Sala...'
-                : selectedMode === 'infiltrado'
-                ? 'Criar Grupo (Infiltrado)'
-                : 'Criar Sala (Dupla)'}
-            </span>
+            {loading ? 'Criando Sala...' : 'Criar Grupo'}
           </button>
 
           <button
             id="btn-join-group"
             onClick={onGoToEnterCode}
             disabled={loading}
-            className="w-full py-4 px-6 rounded-2xl bg-slate-800/80 hover:bg-slate-800 border border-white/10 hover:border-white/20 text-white font-bold text-base active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 px-6 rounded-full bg-white/10 hover:bg-white/15 text-white font-bold text-base border border-white/10 transition-all active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <LogIn className="w-5 h-5 text-cyan-400" />
-            <span>Entrar com Código</span>
+            Entrar em um Grupo
           </button>
-        </div>
-
-        <div className="mt-7 pt-4 border-t border-white/5 flex items-center justify-center gap-2 text-xs font-semibold text-slate-400">
-          <Users className="w-4 h-4 text-indigo-400" />
-          <span>
-            {selectedMode === 'infiltrado'
-              ? 'Recomendado para 3 a 12 jogadores'
-              : 'Perfeito para 2 pessoas'}
-          </span>
         </div>
       </div>
     </div>
