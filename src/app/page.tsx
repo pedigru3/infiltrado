@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import React, { useState, useEffect, useCallback, useSyncExternalStore, useRef } from 'react';
 import { Header } from '@/components/Header';
 import { ScreenHome } from '@/components/ScreenHome';
 import { ScreenEnterCode } from '@/components/ScreenEnterCode';
 import { ScreenName } from '@/components/ScreenName';
 import { ScreenLobby } from '@/components/ScreenLobby';
 import { ScreenGame } from '@/components/ScreenGame';
-import { ThemeModal } from '@/components/ThemeModal';
+import { SettingsModal } from '@/components/SettingsModal';
 import { ClientRoomState } from '@/lib/roomStore';
 
 type AppScreen = 'home' | 'enter_code' | 'name' | 'lobby' | 'game';
@@ -57,8 +57,9 @@ export default function HomePage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isThemeModalOpen, setIsThemeModalOpen] = useState<boolean>(false);
-  const [hasAttemptedAutoRejoin, setHasAttemptedAutoRejoin] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [settingsInitialView, setSettingsInitialView] = useState<'menu' | 'themes'>('menu');
+  const autoRejoinAttemptedRef = useRef<boolean>(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -67,8 +68,8 @@ export default function HomePage() {
 
   // 1. Auto-recuperação de sessão do localStorage ao abrir/recarregar a página
   useEffect(() => {
-    if (hasAttemptedAutoRejoin) return;
-    setHasAttemptedAutoRejoin(true);
+    if (autoRejoinAttemptedRef.current) return;
+    autoRejoinAttemptedRef.current = true;
 
     if (savedRoomCode && activePlayerId && activePlayerName) {
       // Tenta reconectar diretamente à sala salva
@@ -100,7 +101,7 @@ export default function HomePage() {
           // Erro de rede na reconexão inicial
         });
     }
-  }, [savedRoomCode, activePlayerId, activePlayerName, hasAttemptedAutoRejoin]);
+  }, [savedRoomCode, activePlayerId, activePlayerName]);
 
   // 2. Heartbeat contínuo para manter a presença online ativa e sincronizar estado
   const sendHeartbeat = useCallback(async () => {
@@ -149,7 +150,22 @@ export default function HomePage() {
     }
 
     const interval = setInterval(sendHeartbeat, 2500);
-    return () => clearInterval(interval);
+
+    // Dispara sincronização imediata assim que o usuário desbloqueia o celular ou volta para a aba
+    const handleWakeOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        sendHeartbeat();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleWakeOrFocus);
+    window.addEventListener('focus', handleWakeOrFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleWakeOrFocus);
+      window.removeEventListener('focus', handleWakeOrFocus);
+    };
   }, [roomCode, activePlayerId, screen, sendHeartbeat]);
 
   // --- Ações do Jogo ---
@@ -278,6 +294,44 @@ export default function HomePage() {
     }
   };
 
+  // Alterar Quantidade de Infiltrados
+  const handleSelectImpostorCount = async (count: number) => {
+    if (!roomCode || !activePlayerId) return;
+    try {
+      const res = await fetch(`/api/rooms/${roomCode}/impostors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: activePlayerId, count })
+      });
+      const data = await res.json();
+      if (data.success && data.state) {
+        setRoomState(data.state);
+        showToast(`Quantidade ajustada para ${count} ${count === 1 ? 'infiltrado' : 'infiltrados'}!`);
+      }
+    } catch {
+      showToast('Erro ao alterar quantidade de infiltrados');
+    }
+  };
+
+// Alterar Modo de Jogo (Clássico ou Arqueique)
+  const handleSelectGameMode = async (mode: 'classic' | 'undercover') => {
+    if (!roomCode || !activePlayerId) return;
+    try {
+      const res = await fetch(`/api/rooms/${roomCode}/mode`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerId: activePlayerId, gameMode: mode })
+      });
+      const data = await res.json();
+      if (data.success && data.state) {
+        setRoomState(data.state);
+        showToast(`Modo alterado para ${mode === 'undercover' ? 'Avançado' : 'Clássico'}!`);
+      }
+    } catch {
+      showToast('Erro ao alterar modo de jogo');
+    }
+  };
+
   // Resetar para nova rodada / voltar ao lobby
   const handleResetRound = async () => {
     if (!roomCode) return;
@@ -382,7 +436,10 @@ export default function HomePage() {
       {screen === 'lobby' && roomState && (
         <ScreenLobby
           roomState={roomState}
-          onOpenThemes={() => setIsThemeModalOpen(true)}
+          onOpenSettings={(view = 'menu') => {
+            setSettingsInitialView(view);
+            setIsSettingsModalOpen(true);
+          }}
           onStartGame={handleStartGame}
           onLeaveRoom={handleLeaveRoom}
           startingGame={loading}
@@ -400,14 +457,20 @@ export default function HomePage() {
         />
       )}
 
-      {/* Modal de Temas */}
+      {/* Modal de Configurações da Sala */}
       {roomState && (
-        <ThemeModal
-          isOpen={isThemeModalOpen}
+        <SettingsModal
+          isOpen={isSettingsModalOpen}
           selectedThemeId={roomState.selectedThemeId}
+          impostorCount={roomState.impostorCount || 1}
+          gameMode={roomState.gameMode || 'classic'}
+          playerCount={roomState.players.length}
           onSelectTheme={handleSelectTheme}
-          onClose={() => setIsThemeModalOpen(false)}
+          onSelectImpostorCount={handleSelectImpostorCount}
+          onSelectGameMode={handleSelectGameMode}
+          onClose={() => setIsSettingsModalOpen(false)}
           isHost={roomState.isHost}
+          initialView={settingsInitialView}
         />
       )}
 

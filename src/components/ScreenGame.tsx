@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ClientRoomState } from '@/lib/roomStore';
 import confetti from 'canvas-confetti';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface ScreenGameProps {
   roomState: ClientRoomState;
@@ -100,25 +101,25 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
               </span>
               <div className="py-2 min-h-[56px] flex items-center justify-center">
                 {showSecret ? (
-                  isImpostor ? (
-                    <div className="flex flex-col items-center gap-1">
-                      <span
-                        id="secret-word-display"
-                        className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white select-none"
-                      >
-                        Você é o Infiltrado
-                      </span>
-                      <span className="text-xs text-[#9498a4] font-medium">
-                        Tente não ser pego!
-                      </span>
-                    </div>
-                  ) : (
+                  roomState.secretWord ? (
                     <span
                       id="secret-word-display"
                       className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white select-none"
                     >
                       {roomState.secretWord}
                     </span>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1">
+                      <span
+                        id="secret-word-display"
+                        className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white select-none"
+                      >
+                        {(roomState.impostorCount || 1) > 1 ? 'Você é um dos Infiltrados' : 'Você é o Infiltrado'}
+                      </span>
+                      <span className="text-xs text-[#9498a4] font-medium">
+                        Tente não ser pego!
+                      </span>
+                    </div>
                   )
                 ) : (
                   <span className="text-2xl sm:text-3xl font-mono text-[#6b6f7b] select-none">
@@ -131,17 +132,43 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
                 type="button"
                 id="btn-toggle-secret"
                 onClick={() => setShowSecret(!showSecret)}
-                className="inline-block px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-white cursor-pointer transition-all active:scale-95"
               >
-                {showSecret ? 'Ocultar' : 'Mostrar Palavra'}
+                {showSecret ? (
+                  <>
+                    <EyeOff className="w-3.5 h-3.5" />
+                    <span>Ocultar</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Mostrar Palavra</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
 
           {/* Se a rodada foi finalizada e revelada */}
           {roomState.status === 'ended' && roomState.impostorName && (
-            <div className="mt-4 p-4 rounded-2xl bg-[#fde5cd] text-[#9a3412] text-sm font-extrabold animate-in fade-in">
-              O infiltrado era: <span className="underline">{roomState.impostorName}</span>!
+            <div className="mt-4 p-4 rounded-2xl bg-[#fde5cd] text-[#9a3412] text-sm font-extrabold animate-in fade-in space-y-2">
+              <div>
+                {roomState.impostorNames && roomState.impostorNames.length > 1
+                  ? 'Os infiltrados eram: '
+                  : 'O infiltrado era: '}
+                <span className="underline">{roomState.impostorName}</span>!
+              </div>
+
+              {roomState.gameMode === 'undercover' && roomState.civilianWord && roomState.impostorWord && (
+                <div className="pt-2 border-t border-[#9a3412]/20 text-xs font-bold text-[#9a3412] flex flex-col gap-1">
+                  <div>
+                    👥 Maioria: <span className="font-extrabold underline">{roomState.civilianWord}</span>
+                  </div>
+                  <div>
+                    🕵️ Infiltrado: <span className="font-extrabold underline">{roomState.impostorWord}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -157,7 +184,7 @@ export const ScreenGame: React.FC<ScreenGameProps> = ({
                 onClick={onRevealImpostor}
                 className="w-full py-3.5 px-4 rounded-full bg-[#ff4572] hover:bg-[#fa3c6e] text-white font-extrabold text-sm transition-all active:scale-[0.98] cursor-pointer shadow-sm"
               >
-                Revelar Infiltrado
+                {(roomState.impostorCount || 1) > 1 ? 'Revelar Infiltrados' : 'Revelar Infiltrado'}
               </button>
             )}
 

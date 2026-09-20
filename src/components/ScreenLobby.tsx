@@ -3,10 +3,11 @@
 import React, { useState } from 'react';
 import { ClientRoomState } from '@/lib/roomStore';
 import { THEMES } from '@/data/themes';
+import { Settings, Copy, Check } from 'lucide-react';
 
 interface ScreenLobbyProps {
   roomState: ClientRoomState;
-  onOpenThemes: () => void;
+  onOpenSettings: (view?: 'menu' | 'themes') => void;
   onStartGame: () => void;
   onLeaveRoom: () => void;
   startingGame: boolean;
@@ -22,7 +23,7 @@ const AVATAR_COLORS = [
 
 export const ScreenLobby: React.FC<ScreenLobbyProps> = ({
   roomState,
-  onOpenThemes,
+  onOpenSettings,
   onStartGame,
   onLeaveRoom,
   startingGame
@@ -62,38 +63,50 @@ export const ScreenLobby: React.FC<ScreenLobbyProps> = ({
               <button
                 id="btn-copy-code"
                 onClick={handleCopyCode}
-                className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-[#c8f560] transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold text-[#c8f560] transition-all cursor-pointer active:scale-95"
                 title="Copiar código"
                 aria-label="Copiar código do grupo"
               >
-                {copied ? '✓ Copiado' : 'Copiar'}
+                {copied ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Copiado</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copiar</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
 
-          {/* Right side: Gear button for themes */}
+          {/* Right side: Gear button for settings */}
           <button
-            id="btn-open-themes"
-            onClick={onOpenThemes}
-            className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-lg text-white transition-all cursor-pointer active:scale-95"
-            title="Selecionar Temas"
-            aria-label="Selecionar temas"
+            id="btn-open-settings"
+            onClick={() => onOpenSettings('menu')}
+            className="w-11 h-11 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all cursor-pointer active:scale-95"
+            title="Configurações da Sala"
+            aria-label="Configurações da sala"
           >
-            ⚙️
+            <Settings className="w-5 h-5 text-white" />
           </button>
         </div>
 
-        {/* Selected Theme Badge */}
+        {/* Selected Theme & Settings Card */}
         <div
-          onClick={onOpenThemes}
+          onClick={() => onOpenSettings('themes')}
           className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#141518]/8 text-[#141518] cursor-pointer hover:border-[#141518]/20 transition-all shadow-xs"
         >
           <div className="flex items-center gap-3">
             <span className="text-2xl">{currentTheme.emoji}</span>
             <div className="flex flex-col">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b6f7b]">
-                Tema Selecionado
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#6b6f7b]">
+                  Tema Selecionado
+                </span>
+              </div>
               <span className="text-sm font-extrabold text-[#141518]">{currentTheme.name}</span>
             </div>
           </div>
